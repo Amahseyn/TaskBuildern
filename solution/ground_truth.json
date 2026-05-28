@@ -1,0 +1,24 @@
+{
+  "data": {
+    "projectSummary": {
+      "type": "renovation",
+      "floors": 2,
+      "approxFloorArea": 285.74
+    },
+    "detectedScopes": [
+      "foundation",
+      "framing",
+      "roofing",
+      "insulation",
+      "windows_doors",
+      "demolition",
+      "retaining_walls"
+    ],
+    "keySignals": {
+      "roomCountApprox": 14,
+      "windowCountApprox": null,
+      "hasExtension": true,
+      "hasStructuralChanges": true
+    }
+  }
+}
