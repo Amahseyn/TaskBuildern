@@ -10,15 +10,19 @@ Construction documents are notoriously ambiguous and inconsistent. Rather than r
 
 ## Architecture & Strategy
 
-To find the perfect balance between cost, accuracy, and processing speed, this service implements a **multi-architecture Strategy Pattern** with 7 unique extraction approaches:
+To find the perfect balance between cost, accuracy, and processing speed, this service implements a **multi-architecture Strategy Pattern** with 7 unique extraction approaches. 
 
-1. **Native Multimodal (Gemini File API)** *(Primary Approach)* - Directly processes raw PDFs using spatial reasoning. Highly accurate and reliable.
-2. **Pure Text Extraction (PyMuPDF)** - Strictly extracts text while dropping visuals. It’s lightning-fast and cost-effective, though it struggles with rasterized drawings.
-3. **Hybrid Chunking** - Uses keyword density scoring to filter and send only relevant pages (e.g., schedules, structural plans) to the LLM, significantly reducing token costs.
-4. **OCR Pipeline (pdf2image + Tesseract)** - Rasterizes pages and runs traditional local OCR. Perfect as a fallback for scanned, non-searchable PDFs.
-5. **Vision VLM (Base64/Image Payload)** - Sends converted image frames over the wire. Offers incredible accuracy at the expense of a larger payload overhead.
-6. **Two-Stage Hybrid (Text + Vision Escalation)** - Starts with cheap text extraction (v3), then intelligently escalates to vision (v5) *only* for missing or low-confidence data fields.
-7. **Chain-of-Thought Self-Verification** - A dual-pass system where the LLM reviews and critiques its own initial output to ensure cross-document consistency.
+Here is how each method performs based on our evaluation metrics:
+
+| Approach | Accuracy | Cost | Latency |
+| :--- | :--- | :--- | :--- |
+| **1. Native Multimodal** (File API) | **High (90-95%)**. Reads text and spatial visuals. | **Medium ($$)**. Billed per page image + tokens. | **Slow (15-60s)**. API processing delays. |
+| **2. Pure Text** | **Low-Medium**. Fails on unselectable raster drawings. | **Low ($)**. Input text tokens only. | **Fast (2-5s)**. Local text extraction. |
+| **3. Hybrid Chunking** | **Medium**. Drops critical pages occasionally. | **Very Low (< $)**. Minimal text tokens used. | **Very Fast (1-3s)**. Tiny text prompt size. |
+| **4. OCR Pipeline** | **Medium**. Catches raster text, loses structural context. | **Low ($)**. Compute cost shifted locally. | **Very Slow (2-4m)**. Local OCR bottleneck. |
+| **5. Vision VLM** (Payload) | **High (90-95%)**. Exact same reasoning as Native. | **High ($$$)**. Raw image byte payload over wire. | **Slow (20-40s)**. Massive payload transfer. |
+| **6. Two-Stage Hybrid** | **Medium-High (85-90%)**. Intelligent escalation. | **Low-Medium ($)**. Cheap most of the time. | **Medium (5-20s)**. Fast mostly, slow on vision. |
+| **7. Chain-of-Thought** | **Very High (95%+)**. Advanced self-correction logic. | **High ($$$)**. Double inference costs. | **Very Slow (30-90s)**. Two sequential LLM calls. |
 
 *Note: Our core prompts heavily emphasize avoiding hallucinations. Every extracted field includes strict `"confidence"` scores and `"reasoning"`, and any unanswerable ambiguities are cleanly aggregated into an `"openQuestions"` array.*
 
