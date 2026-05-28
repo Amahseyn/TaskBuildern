@@ -1,4 +1,4 @@
-# 🏗️ Construction PDF Analysis Service
+# Construction PDF Analysis Service
 
 [![Pytest CI](https://github.com/Amahseyn/TaskBuildern/actions/workflows/pytest.yml/badge.svg)](https://github.com/Amahseyn/TaskBuildern/actions/workflows/pytest.yml)
 
@@ -8,11 +8,11 @@ Construction documents are notoriously ambiguous and inconsistent. Rather than r
 
 ---
 
-## 🚀 Architecture & Strategy
+## Architecture & Strategy
 
 To find the perfect balance between cost, accuracy, and processing speed, this service implements a **multi-architecture Strategy Pattern** with 7 unique extraction approaches:
 
-1. **Native Multimodal (Gemini File API)** 🌟 *(Primary Approach)* - Directly processes raw PDFs using spatial reasoning. Highly accurate and reliable.
+1. **Native Multimodal (Gemini File API)** *(Primary Approach)* - Directly processes raw PDFs using spatial reasoning. Highly accurate and reliable.
 2. **Pure Text Extraction (PyMuPDF)** - Strictly extracts text while dropping visuals. It’s lightning-fast and cost-effective, though it struggles with rasterized drawings.
 3. **Hybrid Chunking** - Uses keyword density scoring to filter and send only relevant pages (e.g., schedules, structural plans) to the LLM, significantly reducing token costs.
 4. **OCR Pipeline (pdf2image + Tesseract)** - Rasterizes pages and runs traditional local OCR. Perfect as a fallback for scanned, non-searchable PDFs.
@@ -24,7 +24,7 @@ To find the perfect balance between cost, accuracy, and processing speed, this s
 
 ---
 
-## 🛠️ Tech Stack
+## Tech Stack
 
 - **Python 3.10+**
 - **[google-generativeai](https://pypi.org/project/google-generativeai/)**: Powers the core multimodal reasoning capabilities.
@@ -35,7 +35,7 @@ To find the perfect balance between cost, accuracy, and processing speed, this s
 
 ---
 
-## 🚦 Current Limitations
+## Current Limitations
 
 While powerful, the system has a few known constraints:
 - **Latency**: Fully multimodal approaches can take 15-60 seconds, which might be too slow for synchronous, real-time web requests.
@@ -44,7 +44,7 @@ While powerful, the system has a few known constraints:
 
 ---
 
-## 🔮 Future Roadmap
+## Future Roadmap
 
 Here’s what we are planning to build next:
 
@@ -55,7 +55,7 @@ Here’s what we are planning to build next:
 
 ---
 
-## 💻 Usage & Installation
+## Usage & Installation
 
 ### 1. Navigate to the Code Directory & Install Dependencies
 ```bash
