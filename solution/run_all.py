@@ -85,7 +85,7 @@ def main():
 
             try:
                 data = json.loads(response.text)
-                accuracy, passed, total = calculate_accuracy(ground_truth, data)
+                scores = calculate_accuracy(ground_truth, data)
                 
                 final_report["results"][approach_name] = {
                     "success": True,
@@ -93,8 +93,13 @@ def main():
                     "cost_usd": round(cost, 6),
                     "input_tokens": in_tok,
                     "output_tokens": out_tok,
-                    "accuracy_percent": round(accuracy, 2),
-                    "accuracy_details": f"{passed}/{total} key checks passed",
+                    "accuracy_percent": round(scores["overall_pct"], 2),
+                    "accuracy_details": f"{scores['passed']}/{scores['total']} key checks passed",
+                    "granular_scores": {
+                        "summary_pct": round(scores["summary_pct"], 2),
+                        "scopes_pct": round(scores["scopes_pct"], 2),
+                        "signals_pct": round(scores["signals_pct"], 2),
+                    },
                     "extracted_data": data
                 }
             except Exception as e:

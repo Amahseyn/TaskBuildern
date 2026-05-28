@@ -1,53 +1,88 @@
 import json
 import argparse
 import sys
+import math
+
+def extract_value(val):
+    if isinstance(val, dict) and "value" in val:
+        return val["value"]
+    return val
+
+def compare_values(gt_val, pred_val):
+    if gt_val is None and pred_val is None:
+        return True
+    if gt_val is None or pred_val is None:
+        return False
+        
+    if isinstance(gt_val, (int, float)) and isinstance(pred_val, (int, float)):
+        return math.isclose(gt_val, pred_val, rel_tol=0.05)
+        
+    if isinstance(gt_val, str) and isinstance(pred_val, str):
+        return gt_val.strip().lower() == pred_val.strip().lower()
+        
+    return str(gt_val).lower() == str(pred_val).lower()
 
 def calculate_accuracy(ground_truth_data, predicted_data):
-    """
-    Calculates a simple accuracy score based on exact matching of 
-    important estimation fields (scopes, project summary, key signals).
-    """
-    total_checks = 0
-    passed_checks = 0
+    results = {
+        "summary": {"passed": 0, "total": 0},
+        "scopes": {"passed": 0, "total": 0},
+        "signals": {"passed": 0, "total": 0},
+        "overall": {"passed": 0, "total": 0}
+    }
     
+    # 1. Evaluate Project Summary
     gt_summary = ground_truth_data.get("projectSummary", {})
     pred_summary = predicted_data.get("projectSummary", {})
-    for key in ["type", "floors"]:
-        total_checks += 1
-        
-        pred_val = pred_summary.get(key)
-        if isinstance(pred_val, dict) and "value" in pred_val:
-            pred_val = pred_val.get("value")
-            
-        if str(gt_summary.get(key)).lower() == str(pred_val).lower():
-            passed_checks += 1
-
-    gt_scopes = set(ground_truth_data.get("detectedScopes", []))
-    pred_scopes = set(predicted_data.get("detectedScopes", []))
     
+    for key, gt_val in gt_summary.items():
+        results["summary"]["total"] += 1
+        pred_val = extract_value(pred_summary.get(key))
+        if compare_values(gt_val, pred_val):
+            results["summary"]["passed"] += 1
+
+    # 2. Evaluate Scopes (Set Logic)
+    gt_scopes = set(ground_truth_data.get("detectedScopes", []))
+    pred_scopes = set([extract_value(s) for s in predicted_data.get("detectedScopes", [])])
+    
+    # Each scope in ground truth is a check
     for scope in gt_scopes:
-        total_checks += 1
+        results["scopes"]["total"] += 1
         if scope in pred_scopes:
-            passed_checks += 1
+            results["scopes"]["passed"] += 1
             
+    # Penalize for hallucinations (extra scopes not in ground truth)
     for scope in pred_scopes:
         if scope not in gt_scopes:
-            total_checks += 1
+            results["scopes"]["total"] += 1
 
+    # 3. Evaluate Key Signals
     gt_signals = ground_truth_data.get("keySignals", {})
     pred_signals = predicted_data.get("keySignals", {})
-    for key in ["hasExtension", "hasStructuralChanges"]:
-        total_checks += 1
-        
-        pred_val = pred_signals.get(key)
-        if isinstance(pred_val, dict) and "value" in pred_val:
-            pred_val = pred_val.get("value")
-            
-        if gt_signals.get(key) == pred_val:
-            passed_checks += 1
+    
+    for key, gt_val in gt_signals.items():
+        results["signals"]["total"] += 1
+        pred_val = extract_value(pred_signals.get(key))
+        if compare_values(gt_val, pred_val):
+            results["signals"]["passed"] += 1
 
-    accuracy = (passed_checks / total_checks) * 100 if total_checks > 0 else 0
-    return accuracy, passed_checks, total_checks
+    # 4. Overall Tally
+    for category in ["summary", "scopes", "signals"]:
+        results["overall"]["passed"] += results[category]["passed"]
+        results["overall"]["total"] += results[category]["total"]
+
+    def calc_pct(passed, total):
+        return (passed / total) * 100 if total > 0 else 0
+
+    scores = {
+        "summary_pct": calc_pct(results["summary"]["passed"], results["summary"]["total"]),
+        "scopes_pct": calc_pct(results["scopes"]["passed"], results["scopes"]["total"]),
+        "signals_pct": calc_pct(results["signals"]["passed"], results["signals"]["total"]),
+        "overall_pct": calc_pct(results["overall"]["passed"], results["overall"]["total"]),
+        "passed": results["overall"]["passed"],
+        "total": results["overall"]["total"]
+    }
+    
+    return scores
 
 def evaluate_run(ground_truth_path, predicted_path):
     with open(ground_truth_path, "r") as f:
@@ -59,23 +94,27 @@ def evaluate_run(ground_truth_path, predicted_path):
     metadata = prediction_json.get("metadata", {})
     predicted_data = prediction_json.get("data", {})
     
-    accuracy, passed, total = calculate_accuracy(ground_truth, predicted_data)
+    scores = calculate_accuracy(ground_truth, predicted_data)
+    
     latency = metadata.get("latency_seconds", "Unknown")
     cost_usd = metadata.get("cost_usd", "Unknown")
     input_tokens = metadata.get("input_tokens", "Unknown")
     output_tokens = metadata.get("output_tokens", "Unknown")
     approach = metadata.get("approach", "Unknown")
     
-    print("=" * 40)
-    print(f"EVALUATION REPORT")
-    print("=" * 40)
-    print(f"Approach:      {approach}")
-    print(f"Accuracy:      {accuracy:.2f}% ({passed}/{total} key checks passed)")
-    print(f"Latency:       {latency} seconds")
-    print(f"Cost (USD):    ${cost_usd}")
-    print(f"Input Tokens:  {input_tokens}")
-    print(f"Output Tokens: {output_tokens}")
-    print("=" * 40)
+    print("=" * 50)
+    print(f"EVALUATION REPORT: {approach.upper()}")
+    print("=" * 50)
+    print(f"Overall Accuracy:  {scores['overall_pct']:.2f}% ({scores['passed']}/{scores['total']} checks passed)")
+    print(f" ├─ Summary Match: {scores['summary_pct']:.2f}%")
+    print(f" ├─ Scopes Match:  {scores['scopes_pct']:.2f}%")
+    print(f" └─ Signals Match: {scores['signals_pct']:.2f}%")
+    print("-" * 50)
+    print(f"Latency:           {latency} seconds")
+    print(f"Cost (USD):        ${cost_usd}")
+    print(f"Input Tokens:      {input_tokens}")
+    print(f"Output Tokens:     {output_tokens}")
+    print("=" * 50)
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description="Evaluate Extraction Accuracy and Latency")
