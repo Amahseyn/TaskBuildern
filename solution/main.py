@@ -77,14 +77,14 @@ def main() -> None:
     except Exception as e:
         log.error("Primary strategy '%s' failed: %s", args.approach, e)
         
-        # Fallback Logic
+        # Graceful fallback: Default to two_stage, then pure_text
         fallback_approach = "two_stage" if args.approach != "two_stage" else "pure_text"
         if args.approach == "pure_text":
-            log.error("Pure text extraction failed. No further fallbacks available.")
+            log.error("All extraction strategies failed.")
             sys.exit(1)
             
-        log.info("→ Attempting fallback to '%s' strategy...", fallback_approach)
-        args.approach = fallback_approach # update for metadata
+        log.info("→ Attempting fallback to '%s'...", fallback_approach)
+        args.approach = fallback_approach  # Track fallback in metadata
         strategy_cls = STRATEGIES[fallback_approach]
         strategy = strategy_cls(client=client)
         try:

@@ -28,6 +28,16 @@ Here is how each method performs based on our evaluation metrics:
 
 ---
 
+## Benchmark System Configuration
+
+The latency metrics provided above were evaluated on the following local hardware configuration. Running this service on different infrastructure may yield different processing times, particularly for strategies that perform heavy local pre-processing (like PyMuPDF text extraction or OCR).
+
+- **OS:** Ubuntu 24.04.4 LTS
+- **CPU:** Intel(R) Core(TM) i7-6500U CPU @ 2.50GHz
+- **RAM:** 20 GB
+
+---
+
 ## Tech Stack
 
 - **Python 3.10+**
