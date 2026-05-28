@@ -52,10 +52,14 @@ While powerful, the system has a few known constraints:
 
 Here’s what we are planning to build next:
 
-1. **Vector DB / RAG Integration**: For massive 500+ page projects, we'll add a visual embedding model (like ColPali) to retrieve only the most relevant sheets before passing them to the LLM.
-2. **Deterministic Pre-processing**: A lightweight classification microservice to automatically tag pages (e.g., "Elevation", "Floor Plan") before routing them.
-3. **Interactive Frontend**: A sleek web UI for estimators to drag-and-drop PDFs, review the JSON output, and provide corrections to continuously fine-tune the prompts.
-4. **Ensemble Verification**: A rules-based algorithm layer (like regex cross-checking) to independently verify the LLM’s extracted metrics.
+1. **REST API Integration (API Model)**: Expose the extraction engine via a robust REST/GraphQL API to allow seamless integration with external microservices and client applications.
+2. **Database Integration**: Implement a scalable database architecture (e.g., PostgreSQL) to persist extraction results, manage job queues, and run historical analytics.
+3. **Extensive PDF Dataset Collection**: Continuously curate a massive, highly diverse dataset of real-world construction PDFs to expose the model to more edge cases.
+4. **Advanced Mapping for Unstructured Data**: Leveraging our expanded dataset, we will develop a "Best Mapping" methodology—an intelligent translation layer capable of taking wildly unstructured text and perfectly mapping it into normalized database schemas.
+5. **Enhanced Evaluation Methodology**: Upgrade our evaluation pipeline to achieve perfect accuracy tracking across different document types, ensuring our strategies remain robust as the dataset grows.
+6. **Vector DB / RAG Integration**: For massive 500+ page projects, we'll add a visual embedding model (like ColPali) to retrieve only the most relevant sheets before passing them to the LLM.
+7. **Deterministic Pre-processing**: A lightweight classification microservice to automatically tag pages (e.g., "Elevation", "Floor Plan") before routing them.
+8. **Interactive Frontend**: A sleek web UI for estimators to drag-and-drop PDFs, review the JSON output, and provide corrections to continuously fine-tune the prompts.
 
 ---
 
