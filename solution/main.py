@@ -71,11 +71,28 @@ def main() -> None:
     strategy = strategy_cls(client=client)
 
     start = time.time()
+    response = None
     try:
         response = strategy.extract(args.pdfs)
     except Exception as e:
-        log.error("Extraction failed: %s", e)
-        sys.exit(1)
+        log.error("Primary strategy '%s' failed: %s", args.approach, e)
+        
+        # Fallback Logic
+        fallback_approach = "two_stage" if args.approach != "two_stage" else "pure_text"
+        if args.approach == "pure_text":
+            log.error("Pure text extraction failed. No further fallbacks available.")
+            sys.exit(1)
+            
+        log.info("→ Attempting fallback to '%s' strategy...", fallback_approach)
+        args.approach = fallback_approach # update for metadata
+        strategy_cls = STRATEGIES[fallback_approach]
+        strategy = strategy_cls(client=client)
+        try:
+            response = strategy.extract(args.pdfs)
+        except Exception as fallback_err:
+            log.error("Fallback strategy '%s' failed: %s", fallback_approach, fallback_err)
+            sys.exit(1)
+
     latency = time.time() - start
 
     if not response:

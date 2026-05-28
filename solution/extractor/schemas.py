@@ -32,6 +32,16 @@ class KeySignals(BaseModel):
     hasExtension: ExtractedBool
     hasStructuralChanges: ExtractedBool
 
+class MaterialSpec(BaseModel):
+    material: str
+    source_document: Optional[str] = Field(description="Name of the PDF document where this was found")
+    page_reference: Optional[int] = Field(description="Page number in the source document")
+
+class OpenQuestion(BaseModel):
+    question: str
+    source_document: Optional[str] = Field(description="Name of the relevant PDF document")
+    page_reference: Optional[int] = Field(description="Page number where the ambiguity occurs")
+
 class ExtractionResult(BaseModel):
     projectSummary: ProjectSummary
     detectedScopes: List[Literal[
@@ -39,5 +49,5 @@ class ExtractionResult(BaseModel):
         "windows_doors", "demolition", "retaining_walls"
     ]]
     keySignals: KeySignals
-    materialsOrSpecs: List[str]
-    openQuestions: List[str]
+    materialsOrSpecs: List[MaterialSpec]
+    openQuestions: List[OpenQuestion]

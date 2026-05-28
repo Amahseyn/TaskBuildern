@@ -17,8 +17,8 @@ EXTRACTION RULES:
 6. windowCountApprox: Count window tags (W1, W2…) or schedule rows.
 7. hasExtension: true if new spatial addition shown (new slab + new roof section).
 8. hasStructuralChanges: true if existing structural elements are modified/removed.
-9. materialsOrSpecs: Every unique material spec mentioned.
-10. openQuestions: Ambiguities requiring estimator clarification.
+9. materialsOrSpecs: Every unique material spec mentioned, with its source document name and page number.
+10. openQuestions: Ambiguities requiring estimator clarification, noting the source document and page if applicable.
 
 MANDATORY: NEVER hallucinate. If evidence is absent, set value=null.
 Provide confidence (high/medium/low) and 1-sentence reasoning for EVERY field.

@@ -55,6 +55,22 @@ class LLMClient:
     def call(self, contents: list, temperature: float = 0.0) -> Any:
         log.debug("→ Sending request to %s…", self.model_name)
         model = self.make_model(temperature)
+        
+        # Dynamic Token Limit Awareness
+        try:
+            token_info = model.count_tokens(contents)
+            token_count = token_info.total_tokens
+            log.info("  📊 Estimated Payload: ~%d tokens", token_count)
+            # Threshold: 2M for pro, 1M for flash
+            limit = 2_000_000 if "pro" in self.model_name else 1_000_000
+            if token_count > limit * 0.95:  # 95% threshold to be safe
+                log.warning("  ⚠️ Token count (%d) is critically close to model limit (%d)!", token_count, limit)
+                raise ValueError(f"Token limit exceeded: {token_count} > {limit}")
+        except Exception as e:
+            if isinstance(e, ValueError):
+                raise e
+            log.debug("  Token count estimation failed (ignoring): %s", e)
+
         response = model.generate_content(contents)
         in_tok  = response.usage_metadata.prompt_token_count
         out_tok = response.usage_metadata.candidates_token_count

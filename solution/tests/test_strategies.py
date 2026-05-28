@@ -38,3 +38,26 @@ def test_pure_text_extraction(mock_fitz, mock_llm_client, tmp_path):
     # Check that client was called with correct parameters
     call_args = mock_llm_client.call.call_args[0][0]
     assert "Mocked PDF text" in call_args[0]
+
+from extractor.strategies.native_multimodal import NativeMultimodalStrategy
+
+@patch('extractor.strategies.native_multimodal.genai')
+def test_native_multimodal_extraction(mock_genai, mock_llm_client, tmp_path):
+    pdf_path = tmp_path / "test_visual.pdf"
+    pdf_path.write_bytes(b"%PDF-1.4 mock data")
+
+    mock_file = Mock()
+    mock_file.name = "files/mock-123"
+    mock_genai.upload_file.return_value = mock_file
+    
+    # We mock client.wait_for_files to do nothing
+    mock_llm_client.wait_for_files = Mock()
+
+    strategy = NativeMultimodalStrategy(client=mock_llm_client)
+    result = strategy.extract([str(pdf_path)])
+
+    assert mock_genai.upload_file.called
+    assert mock_llm_client.wait_for_files.called
+    assert mock_llm_client.call.called
+    assert mock_genai.delete_file.called
+    assert result.text == '{"success": true}'
