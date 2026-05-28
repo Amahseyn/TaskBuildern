@@ -32,7 +32,9 @@ class LLMClient:
 
     def calculate_cost(self, input_tokens: int, output_tokens: int) -> float:
         p = MODEL_PRICING.get(self.model_name, {"input": 0.075, "output": 0.30})
-        return (input_tokens / 1_000_000) * p["input"] + (output_tokens / 1_000_000) * p["output"]
+        # Gemini API pricing typically doubles for contexts > 128k tokens
+        multiplier = 2.0 if input_tokens > 128_000 else 1.0
+        return ((input_tokens / 1_000_000) * p["input"] * multiplier) + ((output_tokens / 1_000_000) * p["output"] * multiplier)
 
     def make_model(self, temperature: float = 0.0) -> genai.GenerativeModel:
         return genai.GenerativeModel(
