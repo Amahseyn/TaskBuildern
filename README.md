@@ -10,7 +10,10 @@ Construction documents are notoriously ambiguous and inconsistent. Rather than r
 
 ## Architecture & Strategy
 
-To find the perfect balance between cost, accuracy, and processing speed, this service implements a **multi-architecture Strategy Pattern** with 7 unique extraction approaches. 
+To find the perfect balance between cost, accuracy, and processing speed, this service implements a **multi-architecture Strategy Pattern** with 7 unique extraction approaches. It dynamically leverages the right tool for the job:
+- **PyMuPDF (`fitz`)**: For lightning-fast programmatic text and metadata extraction from digital-native PDFs.
+- **Tesseract OCR**: As a fallback for scanned documents or rasterized images where native text is missing.
+- **Vision/Language Models (Gemini)**: For spatial reasoning, unstructured data mapping, and resolving domain-specific construction terminology.
 
 Here is how each method performs based on our evaluation metrics:
 
@@ -25,6 +28,30 @@ Here is how each method performs based on our evaluation metrics:
 | **7. Chain-of-Thought** | **98.1%** | **~$0.30** | **45.0s** |
 
 *Note: Our core prompts heavily emphasize avoiding hallucinations. Every extracted field includes strict `"confidence"` scores and `"reasoning"`, and any unanswerable ambiguities are cleanly aggregated into an `"openQuestions"` array.*
+
+### Confidence Scoring & Reducing Hallucinations
+
+To guarantee enterprise-grade reliability and minimize hallucinations, the system employs several strict guardrails:
+1. **Pydantic Schema Validation**: Forces the LLM to return data in a predictable, typed JSON structure. If the model hallucinates a field type, it is caught immediately.
+2. **Mandatory Reasoning**: The model is forced to output a `"reasoning"` string for *every* extracted structural component, effectively creating a Chain-of-Thought process that reduces hallucinated leaps in logic.
+3. **Explicit Confidence Scores**: Every piece of data comes with a `"confidence"` rating (0.0 to 1.0). Downstream systems can automatically flag low-confidence extractions for human review.
+4. **"I Don't Know" Directives**: The prompt explicitly commands the model to return `null` or add to the `openQuestions` array rather than guessing missing information.
+
+### Scaling to Thousands of Documents per Day
+
+To scale this architecture to process thousands of PDFs daily, we would transition from a synchronous script to an event-driven microservices architecture:
+1. **Asynchronous Message Queues**: Utilize RabbitMQ or AWS SQS to queue incoming PDFs, decoupling ingestion from the heavy extraction process.
+2. **Parallel Processing**: Deploy the extraction workers across a Kubernetes cluster. 
+3. **Smart Routing**: Use a lightweight heuristic router (e.g., assessing file size, scan type) to send easy text-native PDFs to cheaper/faster pure-text pipelines, saving expensive Vision LLM calls only for complex structural diagrams.
+4. **API Load Balancing**: Distribute requests across multiple API keys/endpoints to avoid rate limits, while employing `Tenacity` for exponential backoff retries.
+
+### Evaluating Quality
+
+Quality is evaluated programmatically using our `run_all.py` suite. This tool runs all 7 extraction strategies against a benchmarked set of construction documents and a verified `ground_truth.json`. It automatically calculates:
+- **Accuracy**: By comparing the extracted JSON fields against the ground truth schemas.
+- **Latency**: Measuring end-to-end execution time.
+- **Cost**: Estimating token usage based on the specific strategy used.
+This allows us to continuously monitor system regressions whenever prompts or models are updated.
 
 ---
 
@@ -70,6 +97,12 @@ Here’s what we are planning to build next:
 6. **Vector DB / RAG Integration**: For massive 500+ page projects, we'll add a visual embedding model (like ColPali) to retrieve only the most relevant sheets before passing them to the LLM.
 7. **Deterministic Pre-processing**: A lightweight classification microservice to automatically tag pages (e.g., "Elevation", "Floor Plan") before routing them.
 8. **Interactive Frontend**: A sleek web UI for estimators to drag-and-drop PDFs, review the JSON output, and provide corrections to continuously fine-tune the prompts.
+9. **YOLO & Computer Vision Integration**: Implement YOLO and combine it with other CV or PDF extraction tools for structured data extraction to significantly improve latency.
+10. **LLM Fine-tuning**: Fine-tune LLMs specifically on construction documents to increase extraction accuracy.
+11. **Model Testing & Evaluation**: Test various LLM models locally (e.g., via Ollama) or through different APIs to continually assess and improve overall system performance.
+12. **Performance Feedback Dashboard**: Create a comprehensive dashboard for users to easily provide feedback on extraction performance, enabling a continuous improvement loop.
+13. **Dynamic LLM Fallback Orchestration**: Implement an intelligent fallback router to seamlessly switch between local, privacy-first models (e.g., via Ollama) and powerful cloud APIs (e.g., Gemini) based on document complexity, latency requirements, and API availability.
+14. **MLflow Integration**: Integrate MLflow (or similar tools like LangSmith) for comprehensive experiment tracking, logging prompt versions, tracing LLM outputs, and monitoring extraction accuracy over time.
 
 ---
 
